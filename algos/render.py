@@ -1,0 +1,51 @@
+import torch
+import matplotlib.pyplot as plt
+import numpy as np
+#from utils import rotation_matrix_2d
+
+def transform_segmentation(seg_map, T, scale=1.0):
+    """transform segmentation map provided transformation matrix
+    Arguments:
+    segmentation_map -- a 2D, bitmap of object(s) to be segmented
+    transformation_matrix -- a 3x3 tensor representing a homogenous 2D transformation matrix
+    scale -- scaling factor of coordinates for numerical stability
+    """
+    # create the grid
+    height, width = seg_map.shape[:2]
+    y_indices, x_indices = torch.meshgrid(torch.arange(height), torch.arange(width), indexing='ij')
+
+    y_indices = -(y_indices.clone().float() - height // 2) * scale
+    x_indices = (x_indices.clone().float() - width // 2) * scale
+
+    grid = torch.stack((x_indices, y_indices, torch.ones_like(x_indices)), dim=-1)
+
+    # apply the transformation 
+    t_grid = grid @ T.T
+
+    # seg_coords 
+    seg_coords = t_grid[seg_map.bool()] # seg_coords now (num_pixels, 3)
+    seg_coords = seg_coords.clone()
+
+    seg_coords[:, 1] = (-(1/scale)*seg_coords[:, 1] + height // 2)
+    seg_coords[:, 0] = (1/scale)*seg_coords[:,0] + width // 2
+    seg_coords = seg_coords[:, :2]
+
+    # collect only valid coordinates
+    seg_coords = seg_coords[(seg_coords[:, 0] >= 0) & (seg_coords[:, 0] < width) & (seg_coords[:, 1] >= 0) & (seg_coords[:, 1] < height)]
+    # h = y, w = x - have to swap back
+    seg_coords[:, [0,1]] = seg_coords[:, [1,0]]
+
+    t_seg_map = torch.zeros(height, width)
+    t_seg_map[*seg_coords.long().T] = 1
+    
+    return t_seg_map
+
+# seg_map = torch.zeros(7,7)
+# seg_map[1,1] = 1
+# seg_map[1,2] = 1
+# seg_map[1,3] = 1
+
+
+# t_seg = transform_segmentation(seg_map, rotation_matrix_2d(torch.pi/2))
+# plt.imshow(seg_map);plt.show()
+# plt.imshow(t_seg);plt.show()
