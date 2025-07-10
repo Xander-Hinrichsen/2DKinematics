@@ -1,9 +1,10 @@
 import torch
-import matplotlib.pyplot as pQt
+import matplotlib.pyplot as plt
 from dataclasses import dataclass
 import tyro
 from render import transform_segmentation
 from utils import (rotation_matrix_2d, load_link)
+import time
 
 # todo xhin - have to represent the robot using json, usd would be better but idk
 @dataclass
@@ -12,9 +13,11 @@ class Args:
     link2: str = "../assets/link2.jpg"
     link3: str = "../assets/link3.jpg"
     n: int = 3
+    fps: int = 60
     """Number of links for robot"""
 
-
+# TODO xhin - robot description file + parser 
+# or just a separate robot.py file
 base_y = -255
 link_height = 145
 bt1 = torch.eye(3).float()
@@ -27,6 +30,8 @@ BTs = [bt1, bt2, bt3]
 
 # TODO xhin - currently linear structure - would like to convert to tree structure
 # TODO xhin - add velocity
+# TODO xhin - this function should only return the list/tree of transformations + end-effector poses
+# delegate the rest to the render file
 def forward_kinematics(link_frames, qpos, link_segs, colors):
     """Performs forward kinematics to determine the worldframe views of each link"""
 
@@ -44,15 +49,17 @@ def forward_kinematics(link_frames, qpos, link_segs, colors):
         cur_transform =  cur_transform @ link_frames[i] @ Qt 
         final_transforms.append(cur_transform)
 
-    final_render = torch.ones(*link_segs[0].shape[:2], 3)
+    final_render = torch.ones(*link_segs[0].shape[:2], 3, dtype=torch.uint8) * 255 
     for i in range(len(link_segs)):
         segmentation = transform_segmentation(link_segs[i], final_transforms[i])
-        color = torch.zeros(3)
+        color = torch.zeros(3, dtype=torch.uint8)
         color[colors[i]] = 255
         final_render[segmentation.bool()] = color
     
     return final_render
 
+
+# TODO xhin - move this functionality to a playground/testing file
 if __name__ == "__main__":
     args = tyro.cli(Args)
     link_segs = []
@@ -65,12 +72,19 @@ if __name__ == "__main__":
         link_segs.append(link_seg)
         colors.append(color)
 
-    qpos = [torch.pi/10,-torch.pi/2,torch.pi/2]
-    render = forward_kinematics(BTs, qpos, link_segs, colors)
-    pQt.imshow(render)
-    pQt.show()
+    qpos = [-torch.pi/4, torch.pi/4, torch.pi/2]  # Initial positions
+    fig, ax = plt.subplots()
+    img = ax.imshow(torch.ones(*link_segs[0].shape[:2], 3, dtype=torch.uint8) * 255)
 
-    
+    for step in range(1000):  # Example loop for 100 steps
+        qpos = list(torch.tensor(qpos) + (torch.randn(3) * 0.03))  # Increment positions
+        render = forward_kinematics(BTs, qpos, link_segs, colors)
+        img.set_data(render.numpy())
+        plt.pause(1/args.fps)  # Pause to simulate animation
+
+    plt.show()
+
+
 
 
 

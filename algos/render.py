@@ -3,8 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 #from utils import rotation_matrix_2d
 
-def transform_segmentation(seg_map, T, scale=1.0):
-    """transform segmentation map provided transformation matrix
+conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, padding=1, bias=False)
+conv.weight = torch.nn.Parameter(torch.tensor([[[[0, 1, 0], [1, 1, 1], [0, 1, 0]]]], dtype=torch.float32), requires_grad=False)
+
+def transform_segmentation(seg_map, T, scale=1.0, smoothe=False):
+    """transform segmentation map with provided transformation matrix
     Arguments:
     segmentation_map -- a 2D, bitmap of object(s) to be segmented
     transformation_matrix -- a 3x3 tensor representing a homogenous 2D transformation matrix
@@ -36,7 +39,17 @@ def transform_segmentation(seg_map, T, scale=1.0):
     seg_coords[:, [0,1]] = seg_coords[:, [1,0]]
 
     t_seg_map = torch.zeros(height, width)
+    # seg_coords are transposed here due to indexing order
+    # coords are [[x,y], [x,y], ...], indexes are [[x,x], [y,y], ...]
     t_seg_map[*seg_coords.long().T] = 1
+
+    if smoothe:
+        # TODO xhin - there is likely a better approach
+        # heuristic-byhand approach
+        with torch.no_grad():
+            conv_out = conv(t_seg_map.unsqueeze(0).unsqueeze(0))
+            conv_out = conv((conv_out > 1).float()).squeeze(0).squeeze(0)
+        t_seg_map[conv_out > 2] = 1
     
     return t_seg_map
 
