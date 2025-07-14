@@ -1,7 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-#from utils import rotation_matrix_2d
+#from utils import rot_2d
 
 conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, padding=1, bias=False)
 conv.weight = torch.nn.Parameter(torch.tensor([[[[0, 1, 0], [1, 1, 1], [0, 1, 0]]]], dtype=torch.float32), requires_grad=False)
@@ -61,6 +61,6 @@ def transform_segmentation(seg_map, T, scale=1.0, smoothe=False):
 # seg_map[1,3] = 1
 
 
-# t_seg = transform_segmentation(seg_map, rotation_matrix_2d(torch.pi/2))
+# t_seg = transform_segmentation(seg_map, rot_2d(torch.pi/2))
 # plt.imshow(seg_map);plt.show()
 # plt.imshow(t_seg);plt.show()

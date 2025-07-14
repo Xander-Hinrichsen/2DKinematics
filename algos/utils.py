@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
-def rotation_matrix_2d(theta, device=None):
+def rot_2d(theta, device=None):
     if isinstance(theta, float) or isinstance(theta, int):
         theta = torch.tensor(theta, device=device)
     return torch.tensor([
@@ -10,6 +10,16 @@ def rotation_matrix_2d(theta, device=None):
         [torch.sin(theta),  torch.cos(theta), 0],
         [0,                 0,              1.0],
     ], device=device)
+
+
+def drot_2d_dtheta(theta, device=None):
+    """Derivative of 2D rotation matrix with respect to theta"""
+    omega = torch.tensor([
+        [0, -1., 0],
+        [1., 0,  0],
+        [0,  0,  0],
+    ], device=device)
+    return rot_2d(theta, device=device) @ omega
 
 def load_link(path):
     """Load a link image from the specified path."""

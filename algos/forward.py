@@ -4,7 +4,7 @@ import matplotlib as mpl
 from dataclasses import dataclass, field
 import tyro
 from render import transform_segmentation
-from utils import (rotation_matrix_2d, load_link)
+from utils import (rot_2d, load_link)
 import time
 import os
 
@@ -52,7 +52,7 @@ def forward_kinematics(link_frames, qpos, link_segs, colors, device=None):
     final_transforms = []
     cur_transform = torch.eye(3).float().to(device)
     for i in range(len(link_segs)): 
-        Qt = rotation_matrix_2d(qpos[i], device=device)
+        Qt = rot_2d(qpos[i], device=device)
         cur_transform =  cur_transform @ link_frames[i] @ Qt 
         final_transforms.append(cur_transform)
 
