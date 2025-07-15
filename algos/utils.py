@@ -2,6 +2,16 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
+def pixel_to_cartesian(x,y,w,h, scale=1.0):
+    y = -(y - h // 2) * scale
+    x = (x - w // 2) * scale
+    return x,y
+
+def cartesian_to_pixel(x,y,w,h, scale=1.0):
+    y = -(1./scale) * y + h // 2 
+    x  = (1./scale) * x + w // 2
+    return x, y
+
 def rot_2d(theta, device=None):
     if isinstance(theta, float) or isinstance(theta, int):
         theta = torch.tensor(theta, device=device)
